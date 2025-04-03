@@ -1,5 +1,6 @@
 package com.openlab.configurationBlockchain;
 
+import org.springframework.context.annotation.Configuration;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
@@ -8,7 +9,7 @@ import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.DefaultGasProvider;
 
 import java.math.BigInteger;
-
+@Configuration
 public class TokenDeployer {
     public void conectBlockchain() {
         try {
