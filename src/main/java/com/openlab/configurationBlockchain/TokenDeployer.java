@@ -1,15 +1,17 @@
 package com.openlab.configurationBlockchain;
 
-import org.springframework.context.annotation.Configuration;
-import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameter;
+import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.http.HttpService;
+import org.web3j.crypto.Credentials;
 import org.web3j.tx.gas.DefaultGasProvider;
 
 import java.math.BigInteger;
-@Configuration
+import java.util.concurrent.CompletableFuture;
+
 public class TokenDeployer {
     public void conectBlockchain() {
         try {
@@ -21,40 +23,51 @@ public class TokenDeployer {
             Credentials credentials = Credentials.create("TU_CLAVE_PRIVADA");
 
             // Inicializar parámetros de la transacción
-            BigInteger nonce = web3j.ethGetTransactionCount(credentials.getAddress(), credentials::getAddress)
-                    .send()
-                    .getTransactionCount();
+            BigInteger nonce = web3j.ethGetTransactionCount(
+                    credentials.getAddress(), // Dirección de la cuenta (origen de la transacción)
+                    DefaultBlockParameterName.LATEST // Indica que queremos el último valor del nonce
+            ).send().getTransactionCount();
+
             BigInteger gasPrice = DefaultGasProvider.GAS_PRICE;
             BigInteger gasLimit = DefaultGasProvider.GAS_LIMIT;
             String contractBinary = "0x..."; // Bytecode del contrato compilado con solc
 
-            // Crear y enviar la transacción
-            EthSendTransaction ethSendTransaction = web3j.ethSendTransaction(
-                    new org.web3j.protocol.core.methods.request.Transaction(
-                            credentials.getAddress(),
-                            nonce,
-                            gasPrice,
-                            gasLimit,
-                            null, // Dirección destino (null para contrato nuevo)
-                            BigInteger.ZERO, // Valor en ETH
-                            contractBinary // Bytecode del contrato
-                    )
-            ).send();
+            // Crear la transacción
+            org.web3j.protocol.core.methods.request.Transaction transaction = new org.web3j.protocol.core.methods.request.Transaction(
+                    credentials.getAddress(),
+                    nonce,
+                    gasPrice,
+                    gasLimit,
+                    null, // Dirección destino (null para contrato nuevo)
+                    BigInteger.ZERO, // Valor en ETH
+                    contractBinary // Bytecode del contrato
+            );
 
-            String transactionHash = ethSendTransaction.getTransactionHash();
-            System.out.println("Hash de la transacción: " + transactionHash);
+            // Enviar la transacción de manera asincrónica
+            CompletableFuture<EthSendTransaction> futureTransaction = web3j.ethSendTransaction(transaction).sendAsync();
+            futureTransaction.thenAccept(ethSendTransaction -> {
+                String transactionHash = ethSendTransaction.getTransactionHash();
+                System.out.println("Hash de la transacción: " + transactionHash);
 
-            // Intentar obtener el recibo de la transacción (esperar hasta que esté disponible)
-            TransactionReceipt receipt = null;
-            while (receipt == null) {
-                Thread.sleep(1000); // Espera 1 segundo entre intentos
-                receipt = web3j.ethGetTransactionReceipt(transactionHash).send().getTransactionReceipt().orElse(null);
-            }
-
-            System.out.println("Contrato desplegado con éxito, recibo: " + receipt.toString());
-
+                // Obtener el recibo de la transacción de forma asincrónica
+                CompletableFuture<EthGetTransactionReceipt> futureReceipt = web3j.ethGetTransactionReceipt(transactionHash).sendAsync();
+                futureReceipt.thenAccept(receipt -> {
+                    if (receipt.getTransactionReceipt().isPresent()) {
+                        System.out.println("Contrato desplegado con éxito, recibo: " + receipt.getTransactionReceipt().get());
+                    } else {
+                        System.out.println("El recibo aún no está disponible.");
+                    }
+                }).exceptionally(e -> {
+                    System.err.println("Error al obtener el recibo: " + e.getMessage());
+                    return null;
+                });
+            }).exceptionally(e -> {
+                System.err.println("Error al enviar la transacción: " + e.getMessage());
+                return null;
+            });
         } catch (Exception e) {
-            System.err.println("Error al desplegar el contrato: " + e.getMessage());
+            System.err.println("Error general: " + e.getMessage());
         }
     }
 }
+
