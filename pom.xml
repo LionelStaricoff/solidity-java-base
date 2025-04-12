@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -100,7 +99,7 @@
 				</configuration>
 			</plugin>
 
-
+			<!-- Configuración del plugin de Web3j -->
 			<plugin>
 				<groupId>org.web3j</groupId>
 				<artifactId>web3j-maven-plugin</artifactId>
@@ -111,7 +110,6 @@
 					<outputFormat>java,bin,abi</outputFormat>
 					<soliditySourceFiles>
 						<directory>src/main/resources/contracts</directory>
-						<directory>node_modules</directory>
 						<includes>
 							<include>*.sol</include>
 						</includes>
@@ -121,11 +119,14 @@
 						<bin>src/main/resources/bin/generated</bin>
 						<abi>src/main/resources/abi/generated</abi>
 					</outputDirectory>
+					<abiSourceFiles>
+						<directory>src/main/resources/abi/generated</directory>
+						<includes>
+							<include>src_main_resources_contracts_AggregatorV3Interface_sol_AggregatorV3Interface.abi</include>
+						</includes>
+					</abiSourceFiles>
 				</configuration>
 			</plugin>
-
-
-
 
 		</plugins>
 	</build>
