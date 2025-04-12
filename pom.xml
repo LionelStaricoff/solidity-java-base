@@ -99,6 +99,30 @@
 					</excludes>
 				</configuration>
 			</plugin>
+
+
+		<plugin>
+			<groupId>org.web3j</groupId>
+			<artifactId>web3j-maven-plugin</artifactId>
+			<version>4.14.0</version>
+			<configuration>
+				<packageName>org.sgitario.lottery.blockchain.model</packageName>
+				<nativeJavaType>true</nativeJavaType>
+				<outputFormat>java,bin,abi</outputFormat>
+				<soliditySourceFiles>
+					<directory>src/main/resources/contracts</directory>
+					<includes>
+						<include>*.sol</include>
+					</includes>
+				</soliditySourceFiles>
+				<outputDirectory>
+					<java>src/main/java</java>
+					<bin>src/main/resources/bin/generated</bin>
+					<abi>src/main/resources/abi/generated</abi>
+				</outputDirectory>
+			</configuration>
+		</plugin>
+
 		</plugins>
 	</build>
 
