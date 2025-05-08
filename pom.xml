@@ -104,29 +104,24 @@
 				<groupId>org.web3j</groupId>
 				<artifactId>web3j-maven-plugin</artifactId>
 				<version>4.14.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate-sources</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
 					<packageName>com.openlab.blockchain.model</packageName>
-					<nativeJavaType>true</nativeJavaType>
-					<outputFormat>java,bin,abi</outputFormat>
-					<soliditySourceFiles>
-						<directory>src/main/resources/contracts</directory>
-						<includes>
-							<include>*.sol</include>
-						</includes>
-					</soliditySourceFiles>
-					<outputDirectory>
-						<java>src/main/java</java>
-						<bin>src/main/resources/bin/generated</bin>
-						<abi>src/main/resources/abi/generated</abi>
-					</outputDirectory>
 					<abiSourceFiles>
-						<directory>src/main/resources/abi/generated</directory>
+						<directory>src/main/resources/abi</directory>
 						<includes>
-							<include>src_main_resources_contracts_AggregatorV3Interface_sol_AggregatorV3Interface.abi</include>
+							<include>DAO.abi</include>
 						</includes>
 					</abiSourceFiles>
 				</configuration>
 			</plugin>
+
 
 		</plugins>
 	</build>

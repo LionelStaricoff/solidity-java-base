@@ -1,6 +1,6 @@
 package com.openlab.configurationBlockchain;
 
-import com.openlab.blockchain.model.FounMe;
+import com.openlab.blockchain.model.DAO;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -10,66 +10,57 @@ import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.DefaultGasProvider;
 
+import java.math.BigInteger;
+
 @Component
 public class BlockchainConnector {
+
     @Value("${spring.metamax.infuraSepoliaUrl}")
-    private String SepoliaUrl;
+    private String sepoliaProjectId;
 
     @Value("${spring.metamax.credential}")
-    private String credential;
+    private String privateKey;
 
     @PostConstruct
     public void connect() {
         try {
-            // Conexión al nodo Infura
-            String fullInfuraSepoliaUrl = "https://sepolia.infura.io/v3/".concat(SepoliaUrl);
-            System.out.println("URL de Infura: " + fullInfuraSepoliaUrl);
+            // URL Infura completa
+            String fullInfuraSepoliaUrl = "https://sepolia.infura.io/v3/" + sepoliaProjectId;
+            System.out.println("Conectando a: " + fullInfuraSepoliaUrl);
 
-            // Iniciar Web3j
+            // Inicializar Web3j
             Web3j web3j = Web3j.build(new HttpService(fullInfuraSepoliaUrl));
-            System.out.println("Conexión con Web3j iniciada.");
+            System.out.println("Web3 conectado.");
 
-            // Cargar credenciales desde la clave privada
-            Credentials credentials = Credentials.create(credential);
-            System.out.println("Credenciales cargadas correctamente.");
+            // Credenciales desde la clave privada
+            Credentials credentials = Credentials.create(privateKey);
+            System.out.println("Credenciales cargadas.");
 
-            // Información del contrato
-            String contractAddress = "0x905d692f12c0169E37D2a293363d2DE2073F96c3";
-            System.out.println("Dirección del contrato: " + contractAddress);
+            // Dirección del contrato DAO desplegado
+            String contractAddress = "0xF5C837590F56681E1ffdA0Da1696C47C6B7E3D17";
+            DAO dao = DAO.load(contractAddress, web3j, credentials, new DefaultGasProvider());
+            System.out.println("Contrato cargado.");
 
-            // Cargar el contrato
-            FounMe contract = FounMe.load(contractAddress, web3j, credentials, new DefaultGasProvider());
+            // Verificar que hay código en la dirección (i.e., que es un contrato)
+            String code = web3j.ethGetCode(contractAddress, DefaultBlockParameterName.LATEST)
+                    .send().getCode();
 
-            // Verificar código en la dirección del contrato
-            web3j.ethGetCode(contractAddress, DefaultBlockParameterName.LATEST)
-                    .sendAsync()
-                    .thenAccept(code -> {
-                        if (!code.equals("0x")) {
-                            System.out.println("¡El contrato está desplegado correctamente!");
-
-                            // Obtener el balance de forma asíncrona
-                            contract.getBalance().sendAsync().thenAccept(balance -> {
-                                System.out.println("Balance: " + balance);
-                            }).exceptionally(ex -> {
-                                System.err.println("Error al obtener el balance: " + ex.getMessage());
-                                return null;
-                            });
-                        } else {
-                            System.out.println("No hay código en la dirección proporcionada.");
-                        }
-                    }).exceptionally(ex -> {
-                        System.err.println("Error al verificar el código en la dirección del contrato: " + ex.getMessage());
-                        return null;
-                    });
-
-            // Verificar conexión al contrato
-            if (contract.isValid()) {
-                System.out.println("¡Conexión exitosa al contrato en Sepolia!");
+            if (code != null && !code.equals("0x")) {
+                System.out.println("Contrato verificado en red.");
             } else {
-                System.out.println("Error al conectar con el contrato.");
+                System.out.println("No hay contrato en esa dirección.");
+                return;
             }
+
+            // ✅ Obtener el balance del contrato DAO (en wei)
+            BigInteger balance = web3j.ethGetBalance(contractAddress, DefaultBlockParameterName.LATEST)
+                    .send()
+                    .getBalance();
+
+            System.out.println("Balance del contrato DAO (wei): " + balance);
+
         } catch (Exception e) {
-            System.err.println("Se produjo un error al conectar con el contrato:");
+            System.err.println("Error al conectar con el contrato:");
             e.printStackTrace();
         }
     }
